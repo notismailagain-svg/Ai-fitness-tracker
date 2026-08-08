@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       { property: "og:description", content: "Posture detection, body landmarks and estimated BMI." },
     ],
   }),
-  component: Onboarding;
+  component: Onboarding,
 });
 
 const VIEWS = ["front", "back", "left", "right"] as const;
