@@ -14,16 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      body_analyses: {
+        Row: {
+          bmi: number | null
+          created_at: string
+          flagged: boolean
+          id: string
+          landmarks: Json | null
+          photo_paths: Json
+          posture_notes: string | null
+          posture_score: number | null
+          user_id: string
+        }
+        Insert: {
+          bmi?: number | null
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          landmarks?: Json | null
+          photo_paths?: Json
+          posture_notes?: string | null
+          posture_score?: number | null
+          user_id: string
+        }
+        Update: {
+          bmi?: number | null
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          landmarks?: Json | null
+          photo_paths?: Json
+          posture_notes?: string | null
+          posture_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          flagged: boolean
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          created_at: string
+          id: string
+          log_date: string
+          meals: number
+          sleep_hours: number
+          updated_at: string
+          user_id: string
+          water_ml: number
+          workout_done: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          meals?: number
+          sleep_hours?: number
+          updated_at?: string
+          user_id: string
+          water_ml?: number
+          workout_done?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          meals?: number
+          sleep_hours?: number
+          updated_at?: string
+          user_id?: string
+          water_ml?: number
+          workout_done?: boolean
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          content: Json
+          created_at: string
+          flagged: boolean
+          id: string
+          is_active: boolean
+          kind: string
+          source: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          is_active?: boolean
+          kind: string
+          source?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          flagged?: boolean
+          id?: string
+          is_active?: boolean
+          kind?: string
+          source?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          allergies: string[]
+          banned: boolean
+          created_at: string
+          display_name: string | null
+          email: string | null
+          equipment: string
+          goal: Database["public"]["Enums"]["fitness_goal"] | null
+          height_cm: number | null
+          id: string
+          last_login: string | null
+          onboarded: boolean
+          sex: string | null
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[]
+          banned?: boolean
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          equipment?: string
+          goal?: Database["public"]["Enums"]["fitness_goal"] | null
+          height_cm?: number | null
+          id: string
+          last_login?: string | null
+          onboarded?: boolean
+          sex?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[]
+          banned?: boolean
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          equipment?: string
+          goal?: Database["public"]["Enums"]["fitness_goal"] | null
+          height_cm?: number | null
+          id?: string
+          last_login?: string | null
+          onboarded?: boolean
+          sex?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      progress_entries: {
+        Row: {
+          created_at: string
+          id: string
+          insights: string | null
+          photo_path: string | null
+          user_id: string
+          week_start: string
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insights?: string | null
+          photo_path?: string | null
+          user_id: string
+          week_start?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insights?: string | null
+          photo_path?: string | null
+          user_id?: string
+          week_start?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      fitness_goal:
+        | "weight_loss"
+        | "weight_gain"
+        | "muscle_gain"
+        | "maintenance"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      fitness_goal: [
+        "weight_loss",
+        "weight_gain",
+        "muscle_gain",
+        "maintenance",
+      ],
+    },
   },
 } as const
