@@ -76,7 +76,7 @@ function Tracker() {
     toast.success("Logged for today.");
   }
 
-  const score = dayScore({ meals, water_ml: water, workout_done: workout, sleep_hours: sleep });
+  const score = dayScore({ log_date: today, meals, water_ml: water, workout_done: workout, sleep_hours: sleep });
 
   return (
     <AppShell title="Habit tracker" subtitle={`Streak: ${streak(data?.logs ?? [])} days`}>
