@@ -50,7 +50,7 @@ export function PlanGenerationLoader() {
           className="absolute inset-6 rounded-full border border-primary/15 border-b-primary/60 motion-safe:animate-spin"
           style={{ animationDuration: "2.4s", animationDirection: "reverse" }}
         />
-        <Icon key={index} className="relative h-8 w-8 text-primary motion-safe:animate-scale-in" />
+        <Icon key={index} className="relative h-8 w-8 text-primary motion-safe:animate-plan-pop-in" />
       </div>
 
       <div className="space-y-3">
@@ -69,14 +69,14 @@ export function PlanGenerationLoader() {
       >
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-primary/30 via-primary to-primary/30 motion-safe:animate-[plan-progress_1.6s_ease-in-out_infinite]"
+          className="absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-primary/30 via-primary to-primary/30 motion-safe:animate-plan-progress"
         />
       </div>
 
       <p
         key={index}
         aria-live="polite"
-        className="min-h-6 text-sm font-medium uppercase tracking-widest text-primary motion-safe:animate-fade-in"
+        className="min-h-6 text-sm font-medium uppercase tracking-widest text-primary motion-safe:animate-plan-fade-slide-in"
       >
         {STATUS_MESSAGES[index]}
       </p>
