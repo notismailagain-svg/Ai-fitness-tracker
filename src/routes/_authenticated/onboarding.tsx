@@ -2,12 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, ScanLine, Upload } from "lucide-react";
+import { AlertTriangle, Loader2, ScanLine, Upload } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzePhoto, type PoseResult } from "@/lib/pose";
 import { generatePlans } from "@/lib/coach.functions";
+import { PlanGenerationLoader } from "@/components/PlanGenerationLoader";
 import { bmi, GOAL_LABELS, type Goal } from "@/lib/fitness";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ function Onboarding() {
   const [results, setResults] = useState<Partial<Record<View, PoseResult>>>({});
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   function pick(view: View, file?: File) {
     if (!file) return;
@@ -103,6 +105,7 @@ function Onboarding() {
       return;
     }
     setBusy(true);
+    setGenError(null);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user!.id;
@@ -149,12 +152,13 @@ function Onboarding() {
       });
       if (analysisError) throw new Error(analysisError.message);
 
-      toast.info("Building your AI diet and workout plans…");
       await runGenerate({});
       toast.success("Your plans are ready.");
       navigate({ to: "/plan" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong.");
+      const message = e instanceof Error ? e.message : "Something went wrong.";
+      setGenError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -162,7 +166,9 @@ function Onboarding() {
 
   return (
     <AppShell title="Body analysis" subtitle="Step-by-step onboarding — everything stays private to your account.">
-      <div className="mb-6 flex gap-2">
+      {busy && <PlanGenerationLoader />}
+
+      <div className="mb-6 flex gap-2" hidden={busy}>
         {["Your stats", "Photos & pose scan", "Review"].map((label, i) => (
           <div
             key={label}
@@ -175,7 +181,7 @@ function Onboarding() {
         ))}
       </div>
 
-      {step === 0 && (
+      {step === 0 && !busy && (
         <div className="surface-panel space-y-5 rounded-xl p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Age">
@@ -250,7 +256,7 @@ function Onboarding() {
         </div>
       )}
 
-      {step === 1 && (
+      {step === 1 && !busy && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {VIEWS.map((view) => (
@@ -313,7 +319,7 @@ function Onboarding() {
         </div>
       )}
 
-      {step === 2 && (
+      {step === 2 && !busy && (
         <div className="surface-panel space-y-4 rounded-xl p-6">
           <h2 className="text-xl">Review</h2>
           <dl className="grid gap-3 sm:grid-cols-2">
@@ -327,13 +333,22 @@ function Onboarding() {
           <p className="text-xs text-muted-foreground">
             Image analysis is approximate and not medically certified.
           </p>
+          {genError && (
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-left" role="alert">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Plan generation failed</p>
+                <p className="text-sm text-muted-foreground">{genError}</p>
+              </div>
+            </div>
+          )}
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(1)}>
+            <Button variant="outline" onClick={() => setStep(1)} disabled={busy}>
               Back
             </Button>
-            <Button onClick={finish} disabled={busy}>
+            <Button onClick={finish} disabled={busy} aria-busy={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {busy ? "Generating plans…" : "Generate my AI plans"}
+              {busy ? "Generating plans…" : genError ? "Retry generation" : "Generate my AI plans"}
             </Button>
           </div>
         </div>
