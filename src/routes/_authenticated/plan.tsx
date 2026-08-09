@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { generatePlans } from "@/lib/coach.functions";
+import { PlanGenerationLoader } from "@/components/PlanGenerationLoader";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -40,6 +41,7 @@ function PlanPage() {
   const queryClient = useQueryClient();
   const runGenerate = useServerFn(generatePlans);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["plans"],
@@ -56,12 +58,15 @@ function PlanPage() {
 
   async function regenerate() {
     setBusy(true);
+    setError(null);
     try {
       await runGenerate({});
       await queryClient.invalidateQueries({ queryKey: ["plans"] });
       toast.success("Fresh plans generated.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not generate plans.");
+      const message = e instanceof Error ? e.message : "Could not generate plans.";
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -74,14 +79,28 @@ function PlanPage() {
 
   return (
     <AppShell title="My plan" subtitle="Regenerate any time your body stats or goal change.">
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex justify-end" hidden={busy}>
         <Button onClick={regenerate} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {busy ? "Generating…" : "Regenerate plans"}
         </Button>
       </div>
 
-      {isLoading ? (
+      {busy ? (
+        <PlanGenerationLoader />
+      ) : error ? (
+        <div className="surface-panel flex flex-col items-center gap-4 rounded-xl p-8 text-center" role="alert">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+          <div className="space-y-1">
+            <h2 className="text-xl">Plan generation failed</h2>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+          <Button onClick={regenerate}>
+            <RefreshCw className="h-4 w-4" />
+            Try again
+          </Button>
+        </div>
+      ) : isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !diet && !workout ? (
         <div className="surface-panel rounded-xl p-8 text-center text-sm text-muted-foreground">
