@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -35,6 +35,14 @@ function Coach() {
   const ask = useServerFn(coachReply);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  const [pendingUser, setPendingUser] = useState<string | null>(null);
+
+  // Typewriter state for the newest assistant reply only.
+  const [typingId, setTypingId] = useState<string | null>(null);
+  const [typedCount, setTypedCount] = useState(0);
+  const seenIds = useRef<Set<string> | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: messages } = useQuery({
     queryKey: ["chat"],
@@ -47,33 +55,74 @@ function Coach() {
         .order("created_at", { ascending: true });
       return data ?? [];
     },
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: Infinity,
   });
+
+  const list = messages ?? [];
+
+  // Mark everything loaded before the first send as "already seen" (no animation).
+  useEffect(() => {
+    if (seenIds.current === null && messages) {
+      seenIds.current = new Set(messages.map((m) => m.id));
+    }
+  }, [messages]);
+
+  const typingMessage = typingId ? list.find((m) => m.id === typingId) : undefined;
+
+  useEffect(() => {
+    if (!typingMessage) return;
+    const total = typingMessage.content.length;
+    if (typedCount >= total) {
+      setTypingId(null);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setTypedCount((c) => Math.min(total, c + Math.max(2, Math.round(total / 220))));
+    }, 16);
+    return () => window.clearTimeout(id);
+  }, [typingMessage, typedCount]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [list.length, pendingUser, typedCount]);
 
   async function send(text: string) {
     const message = text.trim();
-    if (!message || busy) return;
+    if (!message || inFlight.current) return;
+    inFlight.current = true;
     setInput("");
     setBusy(true);
+    setPendingUser(message);
     try {
       await ask({ data: { message } });
-      await queryClient.invalidateQueries({ queryKey: ["chat"] });
+      const fresh = await queryClient.fetchQuery<typeof list>({ queryKey: ["chat"] });
+      const last = [...(fresh ?? [])].reverse().find((m) => m.role === "assistant");
+      if (last && !seenIds.current?.has(last.id)) {
+        (fresh ?? []).forEach((m) => seenIds.current?.add(m.id));
+        setTypedCount(0);
+        setTypingId(last.id);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "The coach could not reply.");
     } finally {
+      setPendingUser(null);
       setBusy(false);
+      inFlight.current = false;
     }
   }
 
   return (
     <AppShell title="AI coach" subtitle="Grounded in your body analysis, plan and recent habits.">
       <div className="surface-panel flex min-h-[60vh] flex-col rounded-xl p-6">
-        <div className="flex-1 space-y-4 overflow-y-auto">
-          {(messages ?? []).length === 0 && (
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto">
+          {list.length === 0 && !pendingUser && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Ask anything about your training or nutrition.</p>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTIONS.map((s) => (
-                  <Button key={s} size="sm" variant="outline" onClick={() => send(s)}>
+                  <Button key={s} size="sm" variant="outline" disabled={busy} onClick={() => void send(s)}>
                     {s}
                   </Button>
                 ))}
@@ -81,20 +130,30 @@ function Coach() {
             </div>
           )}
 
-          {(messages ?? []).map((m) => (
-            <div
-              key={m.id}
-              className={`max-w-[85%] rounded-xl px-4 py-3 text-sm ${
-                m.role === "user"
-                  ? "ml-auto bg-primary text-primary-foreground"
-                  : "border border-border bg-secondary/40 text-foreground"
-              }`}
-            >
-              <div className="prose prose-sm prose-invert max-w-none">
-                <ReactMarkdown>{m.content}</ReactMarkdown>
+          {list.map((m) => {
+            const isTyping = m.id === typingId;
+            const content = isTyping ? m.content.slice(0, typedCount) : m.content;
+            return (
+              <div
+                key={m.id}
+                className={`max-w-[85%] rounded-xl px-4 py-3 text-sm motion-safe:animate-plan-fade-slide-in ${
+                  m.role === "user"
+                    ? "ml-auto bg-primary text-primary-foreground"
+                    : "border border-border bg-secondary/40 text-foreground"
+                }`}
+              >
+                <div className="prose prose-sm prose-invert max-w-none">
+                  <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
               </div>
+            );
+          })}
+
+          {pendingUser && (
+            <div className="ml-auto max-w-[85%] rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground opacity-80">
+              {pendingUser}
             </div>
-          ))}
+          )}
 
           {busy && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -115,9 +174,10 @@ function Coach() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask your coach…"
             maxLength={800}
+            disabled={busy}
           />
           <Button type="submit" disabled={busy || !input.trim()}>
-            <Send className="h-4 w-4" />
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
       </div>
