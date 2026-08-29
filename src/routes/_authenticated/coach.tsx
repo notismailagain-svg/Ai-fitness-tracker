@@ -130,7 +130,7 @@ function Coach() {
   return (
     <AppShell title="AI coach" subtitle="Grounded in your body analysis, plan and recent habits.">
       <div className="surface-panel flex h-[70vh] flex-col rounded-xl p-6">
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto no-scrollbar">
           {list.length === 0 && !pendingUser && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Ask anything about your training or nutrition.</p>
