@@ -84,9 +84,23 @@ function Coach() {
     return () => window.clearTimeout(id);
   }, [typingMessage, typedCount]);
 
+  // Scroll to bottom only on structural changes (new message, pending bubble,
+  // typing start) — never on every typedCount tick, which caused a scroll loop.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [list.length, pendingUser, typedCount]);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [list.length, pendingUser, typingId]);
+
+  // While the typewriter runs, follow along ONLY if the user is already
+  // near the bottom; jump instantly (no smooth) to avoid animation churn.
+  useEffect(() => {
+    if (!typingId) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) el.scrollTop = el.scrollHeight;
+  }, [typedCount, typingId]);
 
   async function send(text: string) {
     const message = text.trim();
