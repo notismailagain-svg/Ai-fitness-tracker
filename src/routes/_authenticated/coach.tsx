@@ -108,6 +108,7 @@ function Coach() {
     inFlight.current = true;
     setInput("");
     setBusy(true);
+    setError(null);
     setPendingUser(message);
     try {
       await ask({ data: { message } });
@@ -119,13 +120,21 @@ function Coach() {
         setTypingId(last.id);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "The coach could not reply.");
+      const raw = e instanceof Error ? e.message : "";
+      const credits = /credit/i.test(raw);
+      const msg = credits
+        ? "AI credits are exhausted. Top up your Lovable AI credits to keep chatting with the coach."
+        : raw || "The coach could not reply.";
+      setError(msg);
+      setInput(message);
+      toast.error(msg);
     } finally {
       setPendingUser(null);
       setBusy(false);
       inFlight.current = false;
     }
   }
+
 
   return (
     <AppShell title="AI coach" subtitle="Grounded in your body analysis, plan and recent habits.">
