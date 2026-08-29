@@ -35,6 +35,8 @@ function Coach() {
   const ask = useServerFn(coachReply);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const inFlight = useRef(false);
   const [pendingUser, setPendingUser] = useState<string | null>(null);
 
