@@ -84,9 +84,23 @@ function Coach() {
     return () => window.clearTimeout(id);
   }, [typingMessage, typedCount]);
 
+  // Scroll to bottom only on structural changes (new message, pending bubble,
+  // typing start) — never on every typedCount tick, which caused a scroll loop.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [list.length, pendingUser, typedCount]);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [list.length, pendingUser, typingId]);
+
+  // While the typewriter runs, follow along ONLY if the user is already
+  // near the bottom; jump instantly (no smooth) to avoid animation churn.
+  useEffect(() => {
+    if (!typingId) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) el.scrollTop = el.scrollHeight;
+  }, [typedCount, typingId]);
 
   async function send(text: string) {
     const message = text.trim();
@@ -115,8 +129,8 @@ function Coach() {
 
   return (
     <AppShell title="AI coach" subtitle="Grounded in your body analysis, plan and recent habits.">
-      <div className="surface-panel flex min-h-[60vh] flex-col rounded-xl p-6">
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto">
+      <div className="surface-panel flex h-[70vh] flex-col rounded-xl p-6">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
           {list.length === 0 && !pendingUser && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Ask anything about your training or nutrition.</p>
