@@ -35,6 +35,8 @@ function Coach() {
   const ask = useServerFn(coachReply);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const inFlight = useRef(false);
   const [pendingUser, setPendingUser] = useState<string | null>(null);
 
@@ -108,6 +110,7 @@ function Coach() {
     inFlight.current = true;
     setInput("");
     setBusy(true);
+    setError(null);
     setPendingUser(message);
     try {
       await ask({ data: { message } });
@@ -119,13 +122,21 @@ function Coach() {
         setTypingId(last.id);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "The coach could not reply.");
+      const raw = e instanceof Error ? e.message : "";
+      const credits = /credit/i.test(raw);
+      const msg = credits
+        ? "AI credits are exhausted. Top up your Lovable AI credits to keep chatting with the coach."
+        : raw || "The coach could not reply.";
+      setError(msg);
+      setInput(message);
+      toast.error(msg);
     } finally {
       setPendingUser(null);
       setBusy(false);
       inFlight.current = false;
     }
   }
+
 
   return (
     <AppShell title="AI coach" subtitle="Grounded in your body analysis, plan and recent habits.">
@@ -168,6 +179,22 @@ function Coach() {
               {pendingUser}
             </div>
           )}
+
+          {error && !busy && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-foreground">
+              <p>{error}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => void send(input)}
+                disabled={!input.trim()}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
 
           {busy && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
