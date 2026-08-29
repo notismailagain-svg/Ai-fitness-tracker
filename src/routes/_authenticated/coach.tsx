@@ -180,6 +180,22 @@ function Coach() {
             </div>
           )}
 
+          {error && !busy && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-foreground">
+              <p>{error}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => void send(input)}
+                disabled={!input.trim()}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+
           {busy && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Coach is thinking…
